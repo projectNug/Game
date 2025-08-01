@@ -2,150 +2,76 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chat Presisi</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Fake GPS dengan Google Maps</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     html, body {
-      margin: 0;
-      padding: 0;
       height: 100%;
+      margin: 0;
+      font-family: sans-serif;
+    }
+    #map {
+      height: 90%;
+      width: 100%;
+    }
+    #info {
+      padding: 10px;
+      background: #f0f0f0;
+      text-align: center;
     }
   </style>
 </head>
-<body class="bg-gray-100 flex flex-col h-screen">
-
-  <!-- Header -->
-  <div class="bg-green-600 text-white p-4 text-lg font-bold shadow flex justify-between items-center">
-    <span>NEWGROHO24 Chat</span>
-    <button id="loginBtn" class="bg-white text-green-700 font-medium px-4 py-1 rounded text-sm">Login</button>
+<body>
+  <div id="map"></div>
+  <div id="info">
+    <strong>Lokasi Palsu:</strong><br>
+    Latitude: <span id="lat">-</span> | Longitude: <span id="lng">-</span>
   </div>
 
-  <!-- Chat Area -->
-  <div id="chatBox" class="flex-1 overflow-y-auto px-4 py-2 space-y-2 bg-gray-50"></div>
+  <!-- Google Maps JavaScript API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY"></script>
+  <script>
+    let map;
+    let marker;
 
-  <!-- Form -->
-  <form id="chatForm" class="flex p-2 bg-white border-t shadow hidden">
-    <input id="message" type="text" placeholder="Ketik pesan..." class="flex-1 p-2 border rounded-full focus:outline-none" required />
-    <button type="submit" class="ml-2 bg-green-600 text-white px-4 py-2 rounded-full">Kirim</button>
-  </form>
+    function initMap() {
+      const defaultLoc = { lat: -6.200000, lng: 106.816666 }; // Jakarta
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: defaultLoc,
+        zoom: 12,
+      });
 
-  <!-- Firebase Modular Script -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+      marker = new google.maps.Marker({
+        position: defaultLoc,
+        map: map,
+        draggable: true,
+        title: "Geser atau klik untuk pilih lokasi palsu"
+      });
 
-    // Konfigurasi Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyDONieV41Y74-WX8qaezLMSqzb6q5PYmXk",
-      authDomain: "chat-nug.firebaseapp.com",
-      projectId: "chat-nug",
-      storageBucket: "chat-nug.appspot.com",
-      messagingSenderId: "685385821237",
-      appId: "1:685385821237:web:14ea3748a27c428fd7157c",
-      measurementId: "G-4K1J56QXRJ",
-      databaseURL: "https://chat-nug-default-rtdb.firebaseio.com"
-    };
+      updateDisplay(defaultLoc.lat, defaultLoc.lng);
 
-    // Inisialisasi Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
+      // Klik di peta
+      map.addListener("click", (e) => {
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+        marker.setPosition(e.latLng);
+        updateDisplay(lat, lng);
+      });
 
-    // Elemen HTML
-    const loginBtn = document.getElementById('loginBtn');
-    const chatBox = document.getElementById('chatBox');
-    const chatForm = document.getElementById('chatForm');
-    const messageInput = document.getElementById('message');
-
-    let currentUser = null;
-    let hasLoadedMessages = false;
-
-    // Fungsi login
-    loginBtn.addEventListener('click', () => {
-      signInWithPopup(auth, provider)
-        .then(result => {
-          console.log("Login berhasil:", result.user);
-        })
-        .catch(error => {
-          console.error("Login gagal:", error);
-          alert("Login gagal: " + error.message);
-        });
-    });
-
-    // Setelah login
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        currentUser = user;
-        loginBtn.textContent = user.displayName;
-        loginBtn.classList.add('opacity-50', 'cursor-default');
-        loginBtn.disabled = true;
-
-        chatForm.classList.remove('hidden');
-
-        if (!hasLoadedMessages) {
-          loadMessages();
-          hasLoadedMessages = true;
-        }
-      } else {
-        currentUser = null;
-        chatForm.classList.add('hidden');
-        loginBtn.textContent = "Login";
-        loginBtn.disabled = false;
-        loginBtn.classList.remove('opacity-50', 'cursor-default');
-        chatBox.innerHTML = '';
-      }
-    });
-
-    // Kirim pesan
-    chatForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const msg = messageInput.value.trim();
-      if (msg && currentUser) {
-        push(ref(db, "messages"), {
-          uid: currentUser.uid,
-          name: currentUser.displayName,
-          message: msg,
-          timestamp: Date.now()
-        });
-        messageInput.value = '';
-      }
-    });
-
-    // Tampilkan pesan
-    function loadMessages() {
-      const messagesRef = ref(db, "messages");
-      onChildAdded(messagesRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) return;
-
-        const isMe = currentUser && data.uid === currentUser.uid;
-
-        const container = document.createElement('div');
-        container.className = `flex w-full ${isMe ? 'justify-end' : 'justify-start'}`;
-
-        const bubble = document.createElement('div');
-        bubble.className = `max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-line break-words shadow ${
-          isMe ? 'bg-green-500 text-white rounded-br-none' : 'bg-white text-black rounded-bl-none'
-        }`;
-
-        const nameTag = document.createElement('div');
-        nameTag.className = 'text-xs font-semibold mb-1 text-gray-600';
-        nameTag.textContent = data.name;
-
-        const messageText = document.createElement('div');
-        messageText.textContent = data.message;
-
-        bubble.appendChild(nameTag);
-        bubble.appendChild(messageText);
-        container.appendChild(bubble);
-        chatBox.appendChild(container);
-
-        chatBox.scrollTop = chatBox.scrollHeight;
+      // Drag marker
+      marker.addListener("dragend", () => {
+        const pos = marker.getPosition();
+        updateDisplay(pos.lat(), pos.lng());
       });
     }
+
+    function updateDisplay(lat, lng) {
+      document.getElementById("lat").innerText = lat.toFixed(6);
+      document.getElementById("lng").innerText = lng.toFixed(6);
+    }
+
+    // Jalankan map setelah halaman selesai dimuat
+    window.onload = initMap;
   </script>
 </body>
 </html>
