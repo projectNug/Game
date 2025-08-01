@@ -1,62 +1,97 @@
-<!-- Ganti CDN Firebase kamu di atas jadi modular -->
-<script type="module">
-  // Import dari Firebase modular CDN
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyDONieV41Y74-WX8qaezLMSqzb6q5PYmXk",
-    authDomain: "chat-nug.firebaseapp.com",
-    projectId: "chat-nug",
-    storageBucket: "chat-nug.appspot.com",
-    messagingSenderId: "685385821237",
-    appId: "1:685385821237:web:14ea3748a27c428fd7157c",
-    measurementId: "G-4K1J56QXRJ",
-    databaseURL: "https://chat-nug-default-rtdb.firebaseio.com"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
-
-  const chatBox = document.getElementById('chatBox');
-  const chatForm = document.getElementById('chatForm');
-  const messageInput = document.getElementById('message');
-  const localName = "Saya";
-
-  // Kirim pesan
-  chatForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const msg = messageInput.value.trim();
-    if (msg) {
-      push(ref(db, "messages"), {
-        name: localName,
-        message: msg,
-        timestamp: Date.now()
-      });
-      messageInput.value = '';
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat Presisi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
     }
-  });
+  </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen">
 
-  // Tampilkan pesan saat ditambahkan
-  const messagesRef = ref(db, "messages");
-  onChildAdded(messagesRef, (snapshot) => {
-    const data = snapshot.val();
-    if (!data) return;
+  <!-- Header -->
+  <div class="bg-green-600 text-white p-4 text-lg font-bold shadow">
+    NEWGROHO24 Chat
+  </div>
 
-    const { name, message } = data;
-    const isMe = name === localName;
+  <!-- Chat Area -->
+  <div id="chatBox" class="flex-1 overflow-y-auto px-4 py-2 space-y-2 bg-gray-50"></div>
 
-    const container = document.createElement('div');
-    container.className = `flex w-full ${isMe ? 'justify-end' : 'justify-start'}`;
+  <!-- Form -->
+  <form id="chatForm" class="flex p-2 bg-white border-t shadow">
+    <input id="message" type="text" placeholder="Ketik pesan..." class="flex-1 p-2 border rounded-full focus:outline-none" required />
+    <button type="submit" class="ml-2 bg-green-600 text-white px-4 py-2 rounded-full">Kirim</button>
+  </form>
 
-    const bubble = document.createElement('div');
-    bubble.className = `max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-line break-words shadow ${
-      isMe ? 'bg-green-500 text-white rounded-br-none' : 'bg-white text-black rounded-bl-none'
-    }`;
+  <!-- Firebase Modular Script -->
+  <script type="module">
+    // Import dari Firebase modular CDN
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-    bubble.textContent = message;
-    container.appendChild(bubble);
-    chatBox.appendChild(container);
-    chatBox.scrollTop = chatBox.scrollHeight;
-  });
-      </script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDONieV41Y74-WX8qaezLMSqzb6q5PYmXk",
+      authDomain: "chat-nug.firebaseapp.com",
+      projectId: "chat-nug",
+      storageBucket: "chat-nug.appspot.com",
+      messagingSenderId: "685385821237",
+      appId: "1:685385821237:web:14ea3748a27c428fd7157c",
+      measurementId: "G-4K1J56QXRJ",
+      databaseURL: "https://chat-nug-default-rtdb.firebaseio.com"
+    };
+
+    // Inisialisasi Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const chatBox = document.getElementById('chatBox');
+    const chatForm = document.getElementById('chatForm');
+    const messageInput = document.getElementById('message');
+    const localName = "Saya"; // Ganti dengan nama pengguna lokal jika mau
+
+    // Kirim pesan
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const msg = messageInput.value.trim();
+      if (msg) {
+        push(ref(db, "messages"), {
+          name: localName,
+          message: msg,
+          timestamp: Date.now()
+        });
+        messageInput.value = '';
+      }
+    });
+
+    // Tampilkan pesan saat ditambahkan
+    const messagesRef = ref(db, "messages");
+    onChildAdded(messagesRef, (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+
+      const { name, message } = data;
+      const isMe = name === localName;
+
+      const container = document.createElement('div');
+      container.className = `flex w-full ${isMe ? 'justify-end' : 'justify-start'}`;
+
+      const bubble = document.createElement('div');
+      bubble.className = `max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-line break-words shadow ${
+        isMe ? 'bg-green-500 text-white rounded-br-none' : 'bg-white text-black rounded-bl-none'
+      }`;
+
+      bubble.textContent = message;
+      container.appendChild(bubble);
+      chatBox.appendChild(container);
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+  </script>
+</body>
+</html>
