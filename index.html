@@ -61,14 +61,16 @@
     const messageInput = document.getElementById('message');
 
     let currentUser = null;
+    let hasLoadedMessages = false;
 
-    // Login dengan Google
+    // Fungsi login
     loginBtn.addEventListener('click', () => {
       signInWithPopup(auth, provider)
         .then(result => {
-          currentUser = result.user;
+          console.log("Login berhasil:", result.user);
         })
         .catch(error => {
+          console.error("Login gagal:", error);
           alert("Login gagal: " + error.message);
         });
     });
@@ -78,13 +80,22 @@
       if (user) {
         currentUser = user;
         loginBtn.textContent = user.displayName;
+        loginBtn.classList.add('opacity-50', 'cursor-default');
+        loginBtn.disabled = true;
+
         chatForm.classList.remove('hidden');
-        loadMessages();
+
+        if (!hasLoadedMessages) {
+          loadMessages();
+          hasLoadedMessages = true;
+        }
       } else {
-        chatForm.classList.add('hidden');
-        chatBox.innerHTML = '';
-        loginBtn.textContent = "Login";
         currentUser = null;
+        chatForm.classList.add('hidden');
+        loginBtn.textContent = "Login";
+        loginBtn.disabled = false;
+        loginBtn.classList.remove('opacity-50', 'cursor-default');
+        chatBox.innerHTML = '';
       }
     });
 
