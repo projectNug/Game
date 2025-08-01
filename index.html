@@ -32,14 +32,13 @@
       apiKey: "AIzaSyDONieV41Y74-WX8qaezLMSqzb6q5PYmXk",
       authDomain: "chat-nug.firebaseapp.com",
       projectId: "chat-nug",
-      storageBucket: "chat-nug.firebasestorage.app",
+      storageBucket: "chat-nug.appspot.com",
       messagingSenderId: "685385821237",
       appId: "1:685385821237:web:14ea3748a27c428fd7157c",
       measurementId: "G-4K1J56QXRJ",
-      databaseURL: "https://chat-nug-default-rtdb.firebaseio.com"
+      databaseURL: "https://chat-nug-default-rtdb.firebaseio.com" // PENTING!
     };
 
-    // Inisialisasi Firebase
     const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -63,7 +62,10 @@
     });
 
     db.ref("messages").on("child_added", (snapshot) => {
-      const { name, message } = snapshot.val();
+      const data = snapshot.val();
+      if (!data) return;
+
+      const { name, message } = data;
       const isMe = name === usernameInput.value.trim();
 
       const container = document.createElement('div');
