@@ -16,25 +16,27 @@
 <body class="bg-gray-100 flex flex-col h-screen">
 
   <!-- Header -->
-  <div class="bg-green-600 text-white p-4 text-lg font-bold shadow">
-    NEWGROHO24 Chat
+  <div class="bg-green-600 text-white p-4 text-lg font-bold shadow flex justify-between items-center">
+    <span>NEWGROHO24 Chat</span>
+    <button id="loginBtn" class="bg-white text-green-700 font-medium px-4 py-1 rounded text-sm">Login</button>
   </div>
 
   <!-- Chat Area -->
   <div id="chatBox" class="flex-1 overflow-y-auto px-4 py-2 space-y-2 bg-gray-50"></div>
 
   <!-- Form -->
-  <form id="chatForm" class="flex p-2 bg-white border-t shadow">
+  <form id="chatForm" class="flex p-2 bg-white border-t shadow hidden">
     <input id="message" type="text" placeholder="Ketik pesan..." class="flex-1 p-2 border rounded-full focus:outline-none" required />
     <button type="submit" class="ml-2 bg-green-600 text-white px-4 py-2 rounded-full">Kirim</button>
   </form>
 
   <!-- Firebase Modular Script -->
   <script type="module">
-    // Import dari Firebase modular CDN
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
+    // Konfigurasi Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyDONieV41Y74-WX8qaezLMSqzb6q5PYmXk",
       authDomain: "chat-nug.firebaseapp.com",
@@ -49,19 +51,51 @@
     // Inisialisasi Firebase
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
+    // Elemen HTML
+    const loginBtn = document.getElementById('loginBtn');
     const chatBox = document.getElementById('chatBox');
     const chatForm = document.getElementById('chatForm');
     const messageInput = document.getElementById('message');
-    const localName = "Saya"; // Ganti dengan nama pengguna lokal jika mau
+
+    let currentUser = null;
+
+    // Login dengan Google
+    loginBtn.addEventListener('click', () => {
+      signInWithPopup(auth, provider)
+        .then(result => {
+          currentUser = result.user;
+        })
+        .catch(error => {
+          alert("Login gagal: " + error.message);
+        });
+    });
+
+    // Setelah login
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        loginBtn.textContent = user.displayName;
+        chatForm.classList.remove('hidden');
+        loadMessages();
+      } else {
+        chatForm.classList.add('hidden');
+        chatBox.innerHTML = '';
+        loginBtn.textContent = "Login";
+        currentUser = null;
+      }
+    });
 
     // Kirim pesan
     chatForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const msg = messageInput.value.trim();
-      if (msg) {
+      if (msg && currentUser) {
         push(ref(db, "messages"), {
-          name: localName,
+          uid: currentUser.uid,
+          name: currentUser.displayName,
           message: msg,
           timestamp: Date.now()
         });
@@ -69,29 +103,38 @@
       }
     });
 
-    // Tampilkan pesan saat ditambahkan
-    const messagesRef = ref(db, "messages");
-    onChildAdded(messagesRef, (snapshot) => {
-      const data = snapshot.val();
-      if (!data) return;
+    // Tampilkan pesan
+    function loadMessages() {
+      const messagesRef = ref(db, "messages");
+      onChildAdded(messagesRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
 
-      const { name, message } = data;
-      const isMe = name === localName;
+        const isMe = currentUser && data.uid === currentUser.uid;
 
-      const container = document.createElement('div');
-      container.className = `flex w-full ${isMe ? 'justify-end' : 'justify-start'}`;
+        const container = document.createElement('div');
+        container.className = `flex w-full ${isMe ? 'justify-end' : 'justify-start'}`;
 
-      const bubble = document.createElement('div');
-      bubble.className = `max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-line break-words shadow ${
-        isMe ? 'bg-green-500 text-white rounded-br-none' : 'bg-white text-black rounded-bl-none'
-      }`;
+        const bubble = document.createElement('div');
+        bubble.className = `max-w-[80%] px-4 py-2 rounded-2xl text-sm whitespace-pre-line break-words shadow ${
+          isMe ? 'bg-green-500 text-white rounded-br-none' : 'bg-white text-black rounded-bl-none'
+        }`;
 
-      bubble.textContent = message;
-      container.appendChild(bubble);
-      chatBox.appendChild(container);
+        const nameTag = document.createElement('div');
+        nameTag.className = 'text-xs font-semibold mb-1 text-gray-600';
+        nameTag.textContent = data.name;
 
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
+        const messageText = document.createElement('div');
+        messageText.textContent = data.message;
+
+        bubble.appendChild(nameTag);
+        bubble.appendChild(messageText);
+        container.appendChild(bubble);
+        chatBox.appendChild(container);
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+    }
   </script>
 </body>
 </html>
