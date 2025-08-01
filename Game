@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Game Balapan MotoGP</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      border: 4px solid white;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+    #controls {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
+      border-radius: 50%;
+      background: #444;
+      color: white;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+<h2 style="color: white">🏍️ Game Balapan Sirkuit</h2>
+
+<canvas id="gameCanvas" width="360" height="600"></canvas>
+
+<div id="controls">
+  <button class="btn" onclick="move('up')">↑</button>
+  <button class="btn" onclick="move('left')">←</button>
+  <button class="btn" onclick="move('down')">↓</button>
+  <button class="btn" onclick="move('right')">→</button>
+</div>
+
+<script>
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+
+  const trackImg = new Image();
+  trackImg.src = "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Circuit_Mugello.png/800px-Circuit_Mugello.png";
+
+  let player = {
+    x: 160,
+    y: 500,
+    size: 32
+  };
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(trackImg, 0, 0, canvas.width, canvas.height);
+
+    // Gambar motor sebagai emoji dulu
+    ctx.font = "32px serif";
+    ctx.fillText("🏍️", player.x, player.y);
+  }
+
+  function move(dir) {
+    const oldX = player.x;
+    const oldY = player.y;
+
+    if (dir === "left") player.x -= 5;
+    if (dir === "right") player.x += 5;
+    if (dir === "up") player.y -= 5;
+    if (dir === "down") player.y += 5;
+
+    // Cek pixel warna untuk batasi lintasan
+    const pixel = ctx.getImageData(player.x + 10, player.y - 10, 1, 1).data;
+    const isTrack = pixel[0] < 160 && pixel[1] < 160 && pixel[2] < 160;
+
+    if (!isTrack) {
+      player.x = oldX;
+      player.y = oldY;
+    }
+
+    draw();
+  }
+
+  trackImg.onload = () => draw();
+</script>
+
+</body>
+</html>
